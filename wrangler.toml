@@ -1,0 +1,22 @@
+# Cloudflare Pages/Workers configuration
+name = "ai-prompt-generator"
+main = "api.py"
+compatibility_date = "2024-01-01"
+
+# Note: Python Workers support is experimental
+# For production, consider Railway, Render, or Fly.io instead
+
+[site]
+bucket = "./static"
+
+[env.production]
+name = "ai-prompt-generator-prod"
+
+[env.development]
+name = "ai-prompt-generator-dev"
+
+# Environment variables (set these in Cloudflare dashboard under Settings > Variables)
+# Required secrets:
+# - GEMINI_API_KEY
+# - OPENROUTER_API_KEY (optional)
+# - ANTHROPIC_API_KEY (optional)

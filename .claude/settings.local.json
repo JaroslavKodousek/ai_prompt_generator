@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(mkdir:*)",
+      "Bash(node:*)",
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(if [ -f .env ])",
+      "Bash(then echo \"✓ .env file exists\")",
+      "Bash(else echo \"✗ .env file not found - need to create it\")",
+      "Bash(fi)",
+      "Bash(cat:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

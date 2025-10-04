@@ -1,0 +1,29 @@
+INVOICE
+
+Invoice Number: INV-2024-001
+Date: January 15, 2024
+
+Bill To:
+John Smith
+123 Main Street
+New York, NY 10001
+
+From:
+Acme Corporation
+456 Business Ave
+San Francisco, CA 94102
+
+Description                Quantity    Unit Price    Total
+----------------------------------------------------------
+Website Development        1           $2,500.00     $2,500.00
+Logo Design               1           $800.00       $800.00
+Hosting (Annual)          1           $200.00       $200.00
+
+                                      Subtotal:     $3,500.00
+                                      Tax (8%):     $280.00
+                                      TOTAL:        $3,780.00
+
+Payment Terms: Net 30
+Due Date: February 14, 2024
+
+Thank you for your business!

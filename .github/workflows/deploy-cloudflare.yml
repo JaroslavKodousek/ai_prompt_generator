@@ -1,0 +1,22 @@
+name: Deploy to Cloudflare Workers
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Deploy to Cloudflare Workers
+      uses: cloudflare/wrangler-action@v3
+      with:
+        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        # Note: Python Workers are experimental
+        # You may need to deploy as a traditional service instead
+        # See: https://developers.cloudflare.com/workers/languages/python/
