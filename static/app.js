@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initFileUpload();
     initForm();
     loadStrategies();
+    initModelSelect();
+    initThemeToggle();
 });
 
 // Tab Navigation
@@ -150,14 +152,17 @@ async function handleSubmit() {
     // Prepare form data
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
-    formData.append('provider', document.getElementById('provider').value);
+    formData.append('provider', 'openrouter'); // Always use openrouter
     formData.append('max_concurrent', document.getElementById('max-concurrent').value);
 
     if (schema) formData.append('schema', JSON.stringify(schema));
     if (groundTruth) formData.append('ground_truth', JSON.stringify(groundTruth));
 
-    const model = document.getElementById('model').value;
-    if (model) formData.append('model', model);
+    // Get model from model-select dropdown
+    const modelSelect = document.getElementById('model-select');
+    const customModel = document.getElementById('custom-model');
+    const model = modelSelect.value === 'custom' ? customModel.value : modelSelect.value;
+    if (model && model !== 'custom') formData.append('model', model);
 
     const apiKey = document.getElementById('api-key').value;
     if (apiKey) formData.append('api_key', apiKey);
@@ -411,3 +416,67 @@ function formatFileSize(bytes) {
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
+
+// Model Selection Handler
+function initModelSelect() {
+    const modelSelect = document.getElementById('model-select');
+    const customModelGroup = document.getElementById('custom-model-group');
+
+    if (modelSelect && customModelGroup) {
+        modelSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'custom') {
+                customModelGroup.style.display = 'block';
+            } else {
+                customModelGroup.style.display = 'none';
+            }
+        });
+    }
+}
+
+// Theme Toggle Handler
+function initThemeToggle() {
+    const themeToggle = document.getElementById('theme-toggle');
+    const sunIcon = themeToggle?.querySelector('.sun-icon');
+    const moonIcon = themeToggle?.querySelector('.moon-icon');
+
+    if (!themeToggle) return;
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcons(savedTheme, sunIcon, moonIcon);
+
+    // Toggle handler
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        updateThemeIcons(newTheme, sunIcon, moonIcon);
+    });
+}
+
+function updateThemeIcons(theme, sunIcon, moonIcon) {
+    if (theme === 'dark') {
+        sunIcon?.classList.add('hidden');
+        moonIcon?.classList.remove('hidden');
+    } else {
+        sunIcon?.classList.remove('hidden');
+        moonIcon?.classList.add('hidden');
+    }
+}
+
+// Footer Tab Links
+document.addEventListener('DOMContentLoaded', () => {
+    const footerTabLinks = document.querySelectorAll('.footer-tab-link');
+    footerTabLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const tabName = link.dataset.tab;
+            const tabBtn = document.querySelector(`[data-tab="${tabName}"]`);
+            if (tabBtn) tabBtn.click();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    });
+});

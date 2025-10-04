@@ -128,7 +128,7 @@ class GeminiClient(BaseLLMClient):
 class OpenRouterClient(BaseLLMClient):
     """OpenRouter client - supports ANY model!"""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "google/gemini-2.0-flash-exp:free"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "google/gemini-2.5-flash"):
         import httpx
 
         self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
@@ -137,7 +137,11 @@ class OpenRouterClient(BaseLLMClient):
 
         self.model = model
         self.base_url = "https://openrouter.ai/api/v1"
-        self.client = httpx.AsyncClient()
+        self.client = httpx.AsyncClient(timeout=60.0)
+
+    async def close(self):
+        """Close the HTTP client."""
+        await self.client.aclose()
 
     async def generate(
         self,
@@ -150,7 +154,7 @@ class OpenRouterClient(BaseLLMClient):
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://github.com/yourusername/ai-prompt-generator",
+            "HTTP-Referer": os.getenv("SITE_URL", "https://github.com/ai-prompt-generator"),
             "X-Title": "AI Prompt Generator"
         }
 
@@ -173,7 +177,25 @@ class OpenRouterClient(BaseLLMClient):
                     headers=headers,
                     timeout=30.0
                 )
-                response.raise_for_status()
+
+                # Check for HTTP errors
+                if response.status_code != 200:
+                    error_msg = f"HTTP {response.status_code}"
+                    try:
+                        error_body = response.json()
+                        error_msg = f"{error_msg}: {error_body.get('error', {}).get('message', response.text)}"
+                    except:
+                        error_msg = f"{error_msg}: {response.text}"
+
+                    # Check if it's a rate limit error
+                    if response.status_code == 429 and attempt < max_retries - 1:
+                        delay = base_delay * (2 ** attempt)
+                        print(f"  ⏳ Rate limited, retrying in {delay}s...")
+                        await asyncio.sleep(delay)
+                        continue
+
+                    raise Exception(f"OpenRouter API error: {error_msg}")
+
                 result = response.json()
 
                 # Extract response
@@ -190,14 +212,14 @@ class OpenRouterClient(BaseLLMClient):
                 }
 
             except Exception as e:
-                # Check if it's a rate limit error
-                if "429" in str(e) and attempt < max_retries - 1:
-                    # Exponential backoff
+                if attempt < max_retries - 1 and "429" in str(e):
                     delay = base_delay * (2 ** attempt)
                     print(f"  ⏳ Rate limited, retrying in {delay}s...")
                     await asyncio.sleep(delay)
                 else:
-                    raise
+                    # Add debugging info
+                    error_msg = f"OpenRouter API error: {str(e)}\nModel: {self.model}\nURL: {self.base_url}/chat/completions"
+                    raise Exception(error_msg) from e
 
     def calculate_cost(self, input_tokens: int, output_tokens: int) -> float:
         # OpenRouter shows real-time pricing per model
@@ -236,8 +258,8 @@ def create_llm_client(
         default_model = "gemini-2.0-flash-exp"
         return GeminiClient(api_key, model or default_model)
     elif provider == LLMProvider.OPENROUTER:
-        # Default to free Gemini via OpenRouter
-        default_model = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-exp:free")
+        # Default to Gemini 2.5 Flash via OpenRouter
+        default_model = os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-flash")
         return OpenRouterClient(api_key, model or default_model)
     else:
         raise ValueError(f"Unsupported provider: {provider}")

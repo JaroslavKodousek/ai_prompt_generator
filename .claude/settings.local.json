@@ -20,7 +20,8 @@
       "Bash(git push:*)",
       "Bash(git pull:*)",
       "Bash(git checkout:*)",
-      "Bash(curl -s http://localhost:8000/strategy/strategy_01/prompt)"
+      "Bash(curl -s http://localhost:8000/strategy/strategy_01/prompt)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
