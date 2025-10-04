@@ -103,13 +103,42 @@ async def list_strategies():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/strategy/{strategy_id}/prompt")
+async def get_strategy_prompt(strategy_id: str):
+    """Get the prompt template for a specific strategy."""
+    try:
+        from src.strategies.strategy_registry import get_strategy_by_id
+
+        # Create dummy client
+        client = create_llm_client(LLMProvider.GEMINI)
+        strategy = get_strategy_by_id(strategy_id, client)
+
+        # Get sample prompt
+        sample_text = "[Document content will be inserted here]"
+        prompt_template = strategy.build_prompt(sample_text, schema=None)
+
+        return {
+            "id": strategy.metadata.id,
+            "name": strategy.metadata.name,
+            "description": strategy.metadata.description,
+            "category": strategy.metadata.category,
+            "prompt_template": prompt_template
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/extract")
 async def extract_document(
     file: UploadFile = File(...),
     provider: str = Form("openrouter"),
     model: str = Form("google/gemini-2.5-flash"),
     max_concurrent: int = Form(5),
-    api_key: Optional[str] = Form(None)
+    api_key: Optional[str] = Form(None),
+    schema: Optional[str] = Form(None),
+    ground_truth: Optional[str] = Form(None)
 ):
     """
     Extract data from document using all strategies.
@@ -120,6 +149,8 @@ async def extract_document(
         model: Model name (required for OpenRouter)
         max_concurrent: Max concurrent requests
         api_key: Optional API key (otherwise from env)
+        schema: JSON string of fields to extract (e.g., '{"company_name": "string"}')
+        ground_truth: JSON string of expected values (e.g., '{"company_name": "Acme Corp"}')
 
     Returns:
         Extraction results from all strategies
@@ -140,6 +171,23 @@ async def extract_document(
             temp.write(content)
             temp_file = temp.name
 
+        # Parse schema and ground truth
+        import json
+        schema_dict = None
+        ground_truth_dict = None
+
+        if schema:
+            try:
+                schema_dict = json.loads(schema)
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=400, detail="Invalid schema JSON format")
+
+        if ground_truth:
+            try:
+                ground_truth_dict = json.loads(ground_truth)
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=400, detail="Invalid ground_truth JSON format")
+
         # Create LLM client
         llm_provider = LLMProvider(provider)
         client = create_llm_client(llm_provider, api_key=api_key, model=model)
@@ -155,17 +203,17 @@ async def extract_document(
             request_delay=0.5
         )
 
-        # Run extraction
-        results = await engine.extract_with_all_strategies(temp_file)
+        # Run extraction with schema
+        results = await engine.extract_with_all_strategies(temp_file, schema=schema_dict)
 
-        # Validate results
-        validation_metrics = ResultValidator.compare_results(results, None)
+        # Validate results with ground truth
+        validation_metrics = ResultValidator.compare_results(results, ground_truth_dict)
 
         # Create report
         report = engine.create_comparison_report(
             document_name=file.filename,
             results=results,
-            ground_truth=None
+            ground_truth=ground_truth_dict
         )
         report.validation_metrics = validation_metrics
 

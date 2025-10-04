@@ -55,6 +55,17 @@
                         <div id="file-name" class="file-name"></div>
                     </div>
 
+                    <div class="extraction-fields">
+                        <h3>Extraction Configuration (Optional)</h3>
+                        <p class="help-text">Define what attributes you want to extract and their expected values for validation</p>
+
+                        <div id="fields-container">
+                            <!-- Dynamic fields will be added here -->
+                        </div>
+
+                        <button type="button" class="btn-add-field" onclick="addExtractionField()">+ Add Field</button>
+                    </div>
+
                     <div class="settings-grid">
                         <div class="setting-group">
                             <label for="model-select">Model Selection</label>
