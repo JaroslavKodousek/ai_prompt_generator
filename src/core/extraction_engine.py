@@ -64,13 +64,19 @@ class ExtractionEngine:
 
         async def run_strategy_with_semaphore(strategy: BaseExtractionStrategy):
             async with semaphore:
-                print(f"Running: {strategy.metadata.name}")
+                print(f"Running: {strategy.metadata.name}", flush=True)
                 result = await strategy.extract(text, schema, max_tokens, temperature)
 
                 if result.error:
-                    print(f"  ❌ Error: {result.error}")
+                    print(f"  X Error: {result.error}", flush=True)
                 else:
-                    print(f"  ✓ Completed in {result.execution_time:.2f}s, cost: ${result.cost:.4f}")
+                    print(f"  ✓ Completed in {result.execution_time:.2f}s, cost: ${result.cost:.4f}", flush=True)
+                    # Show extracted data preview
+                    import json
+                    data_str = json.dumps(result.extracted_data, indent=2, ensure_ascii=False)
+                    if len(data_str) > 300:
+                        data_str = data_str[:300] + "..."
+                    print(f"  Data preview: {data_str}", flush=True)
 
                 # Delay between requests
                 await asyncio.sleep(self.request_delay)

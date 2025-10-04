@@ -29,15 +29,15 @@ class ResultReporter:
         sorted_results = sorted(report.results, key=lambda x: x.cost)
 
         for result in sorted_results:
-            status = "✓" if not result.error else "✗"
-            print(f"\n{status} {result.strategy_name} (ID: {result.strategy_id})")
+            status = "OK" if not result.error else "FAIL"
+            print(f"\n[{status}] {result.strategy_name} (ID: {result.strategy_id})")
             print(f"   Time: {result.execution_time:.2f}s | Cost: ${result.cost:.4f} | Tokens: {result.token_count}")
 
             if result.error:
                 print(f"   Error: {result.error}")
             else:
                 # Show extracted data preview
-                data_str = json.dumps(result.extracted_data, indent=2)
+                data_str = json.dumps(result.extracted_data, indent=2, ensure_ascii=False)
                 if len(data_str) > 200:
                     data_str = data_str[:200] + "..."
                 print(f"   Data: {data_str}")

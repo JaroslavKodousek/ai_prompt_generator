@@ -125,10 +125,9 @@ def main():
     import sys
     # Handle Windows console encoding
     if sys.platform == 'win32':
-        try:
-            sys.stdout.reconfigure(encoding='utf-8')
-        except:
-            pass
+        import io
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
     print("\n🚀 AI Prompt Generator - Document Extraction")
     print("=" * 80)
