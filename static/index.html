@@ -4,13 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Prompt Strategy Tester - Compare 20 Extraction Strategies</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🚀 AI Prompt Strategy Tester</h1>
-            <p class="subtitle">Test 20 different AI extraction strategies on your documents and discover which performs best</p>
+    <!-- Theme Toggle (Fixed Position) -->
+    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+        <svg class="theme-icon sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg class="theme-icon moon-icon hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+    </button>
+
+    <div class="container" style="padding-top: 2rem;">
+        <header class="app-header">
+            <h1>AI Prompt Strategy Tester</h1>
         </header>
 
         <nav class="tabs">
@@ -23,11 +43,11 @@
         <div id="test-tab" class="tab-content active">
             <div class="upload-section">
                 <h2>Upload Your Document</h2>
-                <p>Supported formats: PDF, images (PNG, JPG), text files</p>
+                <p>Supported formats: PDF, DOCX, text files</p>
 
                 <form id="upload-form">
                     <div class="file-upload">
-                        <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg,.txt" required>
+                        <input type="file" id="file-input" accept=".pdf,.docx,.txt" required>
                         <label for="file-input" class="file-label">
                             <span class="file-icon">📄</span>
                             <span class="file-text">Choose a file or drag it here</span>
@@ -37,17 +57,29 @@
 
                     <div class="settings-grid">
                         <div class="setting-group">
-                            <label for="provider">AI Provider</label>
-                            <select id="provider" name="provider">
-                                <option value="gemini">Google Gemini (Free)</option>
-                                <option value="openrouter" selected>OpenRouter (Multiple Models)</option>
-                                <option value="anthropic">Anthropic Claude</option>
+                            <label for="model-select">Model Selection</label>
+                            <select id="model-select" name="model_select">
+                                <optgroup label="Top 10 Models (OpenRouter Rankings)">
+                                    <option value="x-ai/grok-code-fast-1">Grok Code Fast 1 - 1.04T tokens</option>
+                                    <option value="x-ai/grok-4-fast:free">Grok 4 Fast (Free) - 980B tokens</option>
+                                    <option value="anthropic/claude-sonnet-4">Claude Sonnet 4 - 399B tokens</option>
+                                    <option value="google/gemini-2.5-flash" selected>Gemini 2.5 Flash - 362B tokens</option>
+                                    <option value="deepseek/deepseek-chat-v3.1:free">DeepSeek V3.1 (Free) - 219B tokens</option>
+                                    <option value="anthropic/claude-sonnet-4.5">Claude Sonnet 4.5 (New) - 210B tokens</option>
+                                    <option value="openai/gpt-4.1-mini-2025-04-14">GPT-4.1 Mini - 149B tokens</option>
+                                    <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash - 146B tokens</option>
+                                    <option value="google/gemini-2.5-pro">Gemini 2.5 Pro - 139B tokens</option>
+                                    <option value="deepseek/deepseek-chat-v3-0324">DeepSeek V3 0324 - 127B tokens</option>
+                                </optgroup>
+                                <optgroup label="Custom">
+                                    <option value="custom">Custom Model ID...</option>
+                                </optgroup>
                             </select>
                         </div>
 
-                        <div class="setting-group">
-                            <label for="model">Model (Optional)</label>
-                            <input type="text" id="model" name="model" placeholder="e.g., google/gemini-2.0-flash-exp:free">
+                        <div class="setting-group" id="custom-model-group" style="display: none;">
+                            <label for="custom-model">Custom Model ID</label>
+                            <input type="text" id="custom-model" name="custom_model" placeholder="e.g., openai/gpt-4o">
                         </div>
 
                         <div class="setting-group">
@@ -56,7 +88,7 @@
                         </div>
 
                         <div class="setting-group">
-                            <label for="api-key">API Key (Optional)</label>
+                            <label for="api-key">OpenRouter API Key (Optional)</label>
                             <input type="password" id="api-key" name="api_key" placeholder="Leave empty to use server key">
                         </div>
                     </div>
@@ -100,8 +132,30 @@
         </div>
     </div>
 
-    <footer>
-        <p>Built to help you discover the best AI prompting strategies for your use case</p>
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <h3>AI Prompt Strategy Tester</h3>
+                <p>Discover the best AI extraction strategies for your documents</p>
+            </div>
+            <div class="footer-links">
+                <div class="footer-column">
+                    <h4>Product</h4>
+                    <a href="#" data-tab="test" class="footer-tab-link">Test Strategies</a>
+                    <a href="#" data-tab="learn" class="footer-tab-link">Learn More</a>
+                    <a href="#" data-tab="results" class="footer-tab-link">View Results</a>
+                </div>
+                <div class="footer-column">
+                    <h4>Resources</h4>
+                    <a href="https://openrouter.ai/docs" target="_blank" rel="noopener">OpenRouter API</a>
+                    <a href="https://openrouter.ai/rankings" target="_blank" rel="noopener">Model Rankings</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 <a href="https://www.linkedin.com/in/jaroslav-kodousek/" target="_blank" rel="noopener" class="author-link">Jaroslav Koďousek</a>. All rights reserved.</p>
+            <p class="footer-credits">Built with <span class="heart">❤️</span> using OpenRouter AI</p>
+        </div>
     </footer>
 
     <script src="/static/app.js"></script>

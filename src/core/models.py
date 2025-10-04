@@ -8,6 +8,7 @@ class DocumentType(str, Enum):
     PDF = "pdf"
     IMAGE = "image"
     TEXT = "text"
+    DOCX = "docx"
 
 
 class ExtractionResult(BaseModel):

@@ -107,7 +107,7 @@ async def list_strategies():
 async def extract_document(
     file: UploadFile = File(...),
     provider: str = Form("openrouter"),
-    model: Optional[str] = Form(None),
+    model: str = Form("google/gemini-2.5-flash"),
     max_concurrent: int = Form(5),
     api_key: Optional[str] = Form(None)
 ):
@@ -115,9 +115,9 @@ async def extract_document(
     Extract data from document using all strategies.
 
     Args:
-        file: Document file (PDF, image, or text)
-        provider: LLM provider ("openrouter", "gemini", or "anthropic")
-        model: Optional model name (for OpenRouter)
+        file: Document file (PDF, DOCX, or text)
+        provider: LLM provider (default: "openrouter")
+        model: Model name (required for OpenRouter)
         max_concurrent: Max concurrent requests
         api_key: Optional API key (otherwise from env)
 
@@ -127,10 +127,10 @@ async def extract_document(
     temp_file = None
     try:
         # Validate provider
-        if provider not in ["openrouter", "gemini", "anthropic"]:
+        if provider not in ["openrouter"]:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid provider: {provider}. Use 'openrouter', 'gemini', or 'anthropic'"
+                detail=f"Invalid provider: {provider}. Currently only 'openrouter' is supported"
             )
 
         # Save uploaded file temporarily

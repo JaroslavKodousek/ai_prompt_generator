@@ -5,6 +5,12 @@ from PIL import Image
 import pytesseract
 from ..core.models import DocumentType
 
+try:
+    from docx import Document
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
+
 
 class DocumentLoader:
     """Handles loading and preprocessing documents."""
@@ -19,6 +25,8 @@ class DocumentLoader:
             return DocumentType.IMAGE
         elif suffix in ['.txt', '.md']:
             return DocumentType.TEXT
+        elif suffix == '.docx':
+            return DocumentType.DOCX
         else:
             raise ValueError(f"Unsupported file type: {suffix}")
 
@@ -48,6 +56,34 @@ class DocumentLoader:
         return text
 
     @staticmethod
+    def load_docx(file_path: Path) -> str:
+        """Extract text from DOCX file."""
+        if not DOCX_AVAILABLE:
+            raise ImportError(
+                "python-docx is not installed. Install it with: pip install python-docx"
+            )
+
+        doc = Document(file_path)
+        text_parts = []
+
+        # Extract text from paragraphs
+        for paragraph in doc.paragraphs:
+            if paragraph.text.strip():
+                text_parts.append(paragraph.text)
+
+        # Extract text from tables
+        for table in doc.tables:
+            for row in table.rows:
+                row_text = []
+                for cell in row.cells:
+                    if cell.text.strip():
+                        row_text.append(cell.text.strip())
+                if row_text:
+                    text_parts.append(" | ".join(row_text))
+
+        return "\n".join(text_parts)
+
+    @staticmethod
     def load(file_path: str | Path) -> tuple[str, DocumentType]:
         """
         Load document and return text content with document type.
@@ -71,6 +107,8 @@ class DocumentLoader:
             text = DocumentLoader.load_image(file_path)
         elif doc_type == DocumentType.TEXT:
             text = DocumentLoader.load_text_file(file_path)
+        elif doc_type == DocumentType.DOCX:
+            text = DocumentLoader.load_docx(file_path)
         else:
             raise ValueError(f"Unsupported document type: {doc_type}")
 
