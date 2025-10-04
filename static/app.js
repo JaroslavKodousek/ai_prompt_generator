@@ -4,6 +4,7 @@ const API_BASE = window.location.origin;
 // State
 let currentResults = null;
 let strategies = [];
+let fieldCounter = 0;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -72,6 +73,56 @@ function initFileUpload() {
     });
 }
 
+// Extraction Fields
+function addExtractionField() {
+    const container = document.getElementById('fields-container');
+    const fieldId = fieldCounter++;
+
+    const fieldDiv = document.createElement('div');
+    fieldDiv.className = 'field-row';
+    fieldDiv.id = `field-${fieldId}`;
+    fieldDiv.innerHTML = `
+        <input type="text" class="field-name" placeholder="Attribute name (e.g., company_name)" />
+        <input type="text" class="field-ground-truth" placeholder="Ground truth / Expected value (optional)" />
+        <button type="button" class="btn-remove" onclick="removeField(${fieldId})">×</button>
+    `;
+
+    container.appendChild(fieldDiv);
+}
+
+function removeField(fieldId) {
+    const field = document.getElementById(`field-${fieldId}`);
+    if (field) field.remove();
+}
+
+function getExtractionFields() {
+    const container = document.getElementById('fields-container');
+    const rows = container.querySelectorAll('.field-row');
+
+    const schema = {};
+    const groundTruth = {};
+
+    rows.forEach(row => {
+        const nameInput = row.querySelector('.field-name');
+        const truthInput = row.querySelector('.field-ground-truth');
+
+        const name = nameInput.value.trim();
+        if (name) {
+            schema[name] = "string"; // Default type
+
+            const truth = truthInput.value.trim();
+            if (truth) {
+                groundTruth[name] = truth;
+            }
+        }
+    });
+
+    return {
+        schema: Object.keys(schema).length > 0 ? schema : null,
+        groundTruth: Object.keys(groundTruth).length > 0 ? groundTruth : null
+    };
+}
+
 // Form Submission
 function initForm() {
     const form = document.getElementById('upload-form');
@@ -93,11 +144,17 @@ async function handleSubmit() {
         return;
     }
 
+    // Get extraction fields
+    const { schema, groundTruth } = getExtractionFields();
+
     // Prepare form data
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
     formData.append('provider', document.getElementById('provider').value);
     formData.append('max_concurrent', document.getElementById('max-concurrent').value);
+
+    if (schema) formData.append('schema', JSON.stringify(schema));
+    if (groundTruth) formData.append('ground_truth', JSON.stringify(groundTruth));
 
     const model = document.getElementById('model').value;
     if (model) formData.append('model', model);
@@ -175,7 +232,7 @@ function displayStrategies(strategies) {
     const container = document.getElementById('strategies-list');
 
     container.innerHTML = strategies.map(strategy => `
-        <div class="strategy-card">
+        <div class="strategy-card" onclick="showStrategyPrompt('${strategy.id}')" style="cursor: pointer;">
             <div class="strategy-header">
                 <span class="strategy-id">${strategy.id}</span>
             </div>
@@ -188,6 +245,49 @@ function displayStrategies(strategies) {
             </div>
         </div>
     `).join('');
+}
+
+async function showStrategyPrompt(strategyId) {
+    try {
+        const response = await fetch(`${API_BASE}/strategy/${strategyId}/prompt`);
+        if (!response.ok) throw new Error('Failed to load strategy prompt');
+
+        const data = await response.json();
+
+        // Create modal
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>${data.name} - System Prompt</h2>
+                    <button onclick="this.closest('.modal').remove()" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div style="margin-bottom: 1rem;">
+                        <strong>Strategy ID:</strong> ${data.id}<br>
+                        <strong>Category:</strong> ${data.category}<br>
+                        <strong>Description:</strong> ${data.description}
+                    </div>
+                    <div style="background: var(--bg-dark); padding: 1rem; border-radius: 0.5rem; overflow-x: auto;">
+                        <strong>Prompt Template:</strong>
+                        <pre style="margin-top: 0.5rem; white-space: pre-wrap; font-family: monospace; font-size: 0.9rem;">${data.prompt_template}</pre>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Close on background click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+
+    } catch (error) {
+        console.error('Error loading strategy prompt:', error);
+        alert('Failed to load strategy prompt');
+    }
 }
 
 // Display Results
